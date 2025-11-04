@@ -1,14 +1,10 @@
 import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
+  console.log("📩 API endpoint /api/sendEmail triggered");
   try {
     const body = await req.json();
-    console.log("📩 API called with:", body);
-
-    if (!body.email || !body.message) {
-      console.error("🚨 Missing email or message");
-      return Response.json({ success: false, error: "Missing fields" });
-    }
+    console.log("🟢 Email body received:", body);
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -34,6 +30,6 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  console.log("⚠️ GET request to /api/sendEmail - not allowed");
+  console.log("⚠️ GET /api/sendEmail called (not allowed)");
   return new Response("Method Not Allowed", { status: 405 });
 }
