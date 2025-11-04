@@ -1,8 +1,10 @@
 // @ts-nocheck
 export async function POST(req) {
   try {
-    console.log("📩 Email API called");
-    const { name, email, message } = await req.json();
+    console.log("📩 POST /api/sendEmail - Request received");
+    const body = await req.json();
+    console.log("📦 Request body:", { name: body.name, email: body.email, messageLength: body.message?.length });
+    const { name, email, message } = body;
 
     if (!name || !email || !message) {
       return Response.json(
@@ -32,6 +34,7 @@ export async function POST(req) {
       },
     });
 
+    console.log("📧 Sending email via nodemailer...");
     await transporter.sendMail({
       from: sender,
       to: sender,
@@ -46,6 +49,7 @@ export async function POST(req) {
           + `</div>`,
     });
 
+    console.log("✅ Email sent successfully");
     return Response.json({ success: true });
   } catch (err) {
     console.error("sendEmail POST error", err);

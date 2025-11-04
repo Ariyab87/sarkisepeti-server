@@ -25,6 +25,7 @@ export default function SongForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log("📝 Form submission started");
     setSubmitting(true);
     setError(null);
     setStatus("");
@@ -52,6 +53,8 @@ export default function SongForm() {
       
       const message = messageParts.join("\n\n");
 
+      console.log("📤 Sending POST request to /api/sendEmail", { name, email, messageLength: message.length });
+
       const res = await fetch("/api/sendEmail", {
         method: "POST",
         headers: {
@@ -60,17 +63,22 @@ export default function SongForm() {
         body: JSON.stringify({ name, email, message }),
       });
 
+      console.log("📥 Response received:", res.status, res.statusText);
+
       const data = await res.json();
+      console.log("📊 Response data:", data);
       
       if (!res.ok) {
         throw new Error(data.error || "Failed to submit");
       }
 
       setStatus("Success! Email sent successfully.");
+      console.log("✅ Email sent successfully");
       setTimeout(() => {
         router.push("/thank-you");
       }, 1500);
     } catch (err: any) {
+      console.error("❌ Form submission error:", err);
       setError(err.message || "Submission failed");
       setStatus(`Error: ${err.message || "Submission failed"}`);
     } finally {
