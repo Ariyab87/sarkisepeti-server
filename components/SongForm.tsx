@@ -64,6 +64,7 @@ export default function SongForm() {
       const message = messageParts.join("\n\n");
 
       console.log("📤 Submitting form:", { name, email, messageLength: message.length });
+      console.log("📤 Full message:", message);
 
       const res = await fetch("/api/sendEmail", {
         method: "POST",
@@ -74,22 +75,34 @@ export default function SongForm() {
       });
 
       console.log("📥 Response status:", res.status);
+      console.log("📥 Response ok:", res.ok);
 
       const result = await res.json();
       console.log("📊 Response data:", result);
       
-      if (!res.ok || !result.success) {
+      if (!res.ok) {
+        console.error("❌ HTTP Error:", res.status, res.statusText);
+        throw new Error(result.error || `HTTP ${res.status}: ${res.statusText}`);
+      }
+      
+      if (!result.success) {
+        console.error("❌ API returned success: false", result);
         throw new Error(result.error || "Failed to send email");
       }
       
+      console.log("✅ Email sent successfully! Redirecting in 1.5s...");
       setStatus("✅ Sent successfully!");
       setTimeout(() => {
+        console.log("🔄 Redirecting to /thank-you");
         window.location.href = "/thank-you";
       }, 1500);
     } catch (error: any) {
       console.error("❌ Error sending form:", error);
-      setStatus("❌ Failed: " + (error.message || "Network error"));
-      setError(error.message || "Network error");
+      console.error("❌ Error stack:", error.stack);
+      const errorMessage = error.message || "Network error";
+      setStatus("❌ Failed: " + errorMessage);
+      setError(errorMessage);
+      // DO NOT redirect on error - user should see the error message
     } finally {
       setSubmitting(false);
     }
