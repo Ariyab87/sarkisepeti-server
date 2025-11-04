@@ -5,71 +5,35 @@ export async function POST(req: Request) {
   try {
     const { name, email, message } = await req.json();
 
-    console.log("📩 Email API called:", { name, email });
+    console.log("📩 Email API called", { name, email, message });
 
-    // Validate required fields
-    if (!name || !email || !message) {
-      console.error("❌ Missing required fields");
-      return NextResponse.json(
-        { success: false, error: "Missing required fields: name, email, message" },
-        { status: 400 }
-      );
-    }
-
-    // Validate environment variables
-    const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASS;
-    const emailReceiver = process.env.EMAIL_RECEIVER;
-
-    if (!emailUser || !emailPass || !emailReceiver) {
-      console.error("❌ Missing email configuration:", {
-        hasUser: !!emailUser,
-        hasPass: !!emailPass,
-        hasReceiver: !!emailReceiver,
-      });
-      return NextResponse.json(
-        { success: false, error: "Server email configuration is missing" },
-        { status: 500 }
-      );
-    }
-
-    // Gmail transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: emailUser,
-        pass: emailPass,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
-    const mailOptions = {
-      from: emailUser,
-      to: emailReceiver,
-      subject: `🎵 New Order from ${name}`,
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_RECEIVER,
+      subject: `New Message from ${name}`,
       text: `
-Name: ${name}
-Email: ${email}
+        Name: ${name}
+        Email: ${email}
+        Message: ${message}
+      `,
+    });
 
-Message:
-${message}
-      `.trim(),
-      html: `
-        <div style="font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;padding:20px;">
-          <h2 style="color:#D4AF37;">🎵 New Order from ${name}</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-          <p><strong>Message:</strong></p>
-          <div style="background:#f5f5f5;padding:15px;border-radius:5px;white-space:pre-wrap;">${String(message).replace(/\n/g, "<br/>")}</div>
-        </div>
-      `.trim(),
-    };
-
-    await transporter.sendMail(mailOptions);
     console.log("✅ Email sent successfully");
-
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("❌ Email error:", error.message);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error("❌ Error sending email:", error);
+    return NextResponse.json({ success: false, error: error.message });
   }
+}
+
+export async function GET() {
+  return new Response("Method Not Allowed", { status: 405 });
 }

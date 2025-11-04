@@ -23,12 +23,11 @@ export default function SongForm() {
     setValues((prev) => ({ ...prev, [id]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    console.log("📝 Form submission started");
+    setStatus("Sending...");
     setSubmitting(true);
     setError(null);
-    setStatus("");
 
     try {
       const name = (values.name as string) || "";
@@ -53,8 +52,6 @@ export default function SongForm() {
       
       const message = messageParts.join("\n\n");
 
-      console.log("📤 Sending POST request to /api/sendEmail", { name, email, messageLength: message.length });
-
       const res = await fetch("/api/sendEmail", {
         method: "POST",
         headers: {
@@ -63,24 +60,19 @@ export default function SongForm() {
         body: JSON.stringify({ name, email, message }),
       });
 
-      console.log("📥 Response received:", res.status, res.statusText);
-
-      const data = await res.json();
-      console.log("📊 Response data:", data);
+      const result = await res.json();
       
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to submit");
+      if (result.success) {
+        setStatus("✅ Message sent successfully!");
+        setTimeout(() => {
+          window.location.href = "/thank-you";
+        }, 1500);
+      } else {
+        setStatus("❌ Failed: " + (result.error || "Unknown error"));
       }
-
-      setStatus("✅ Sent! Redirecting...");
-      console.log("✅ Email sent successfully");
-      setTimeout(() => {
-        router.push("/thank-you");
-      }, 1500);
-    } catch (err: any) {
-      console.error("❌ Form submission error:", err);
-      setError(err.message || "Submission failed");
-      setStatus(`❌ Failed: ${err.message || "Submission failed"}`);
+    } catch (error) {
+      console.error("Error sending form:", error);
+      setStatus("❌ Network error");
     } finally {
       setSubmitting(false);
     }
@@ -192,8 +184,7 @@ export default function SongForm() {
           </div>
         )}
 
-        {submitting && <p className="text-yellow-400">Sending...</p>}
-        {status && <p className={`${status.includes("❌") ? "text-red-400" : "text-green-400"}`}>{status}</p>}
+        {status && <p className={`${status.includes("❌") ? "text-red-400" : status.includes("✅") ? "text-green-400" : "text-yellow-400"}`}>{status}</p>}
         {error && <p className="text-red-400">{error}</p>}
 
         <button type="submit" disabled={!productId || submitting} className="gold-button">
