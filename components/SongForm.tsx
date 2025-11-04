@@ -1,0 +1,174 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { getTranslatedQuestions, getProductOptions } from "@/lib/products";
+import { useRouter } from "next/navigation";
+import { useLang } from "./LanguageProvider";
+import LanguageSelect from "./LanguageSelect";
+
+type FieldValue = string | File | File[] | undefined;
+
+export default function SongForm() {
+  const router = useRouter();
+  const [productId, setProductId] = useState<string>("");
+  const [values, setValues] = useState<Record<string, FieldValue>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { t, lang } = useLang() as any;
+
+  const questions = useMemo(() => getTranslatedQuestions(productId, t, lang), [productId, t, lang]);
+
+  function updateValue(id: string, value: FieldValue) {
+    setValues((prev) => ({ ...prev, [id]: value }));
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("productId", productId);
+      const currentOptions = getProductOptions(lang);
+      const productLabel = currentOptions.find((o) => o.value === productId)?.label || productId;
+      formData.append("productLabel", productLabel);
+      for (const q of questions) {
+        const v = values[q.id];
+        if (q.type === "file" && v) {
+          const files = Array.isArray(v) ? v : v instanceof File ? [v] : [];
+          files.forEach((file) => formData.append(q.id, file));
+        } else if (typeof v === "string") {
+          formData.append(q.id, v);
+        }
+      }
+
+      const res = await fetch("/api/sendEmail", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Failed to submit");
+      router.push("/thank-you");
+    } catch (err: any) {
+      setError(err.message || "Submission failed");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl md:text-3xl font-bold">{t("formTitle")}</h2>
+        <p className="text-white/70 mt-2">{t("formSubtitle")}</p>
+      </div>
+      <form onSubmit={onSubmit} className="space-y-6">
+        <div>
+          <label className="block mb-2 text-white/90">{t("productLabel")}</label>
+          <select
+            className="input-base w-full bg-black/70"
+            value={productId}
+            onChange={(e) => {
+              setProductId(e.target.value);
+              setValues({});
+            }}
+            required
+          >
+            <option value="" disabled>
+              {t("chooseProduct")}
+            </option>
+            {getProductOptions(lang).map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {productId && (
+          <div className="space-y-5">
+            {questions.map((q) => (
+              <div key={q.id}>
+                <label className="block mb-2 text-white/90">{q.label}</label>
+                {q.type === "text" && (
+                  <input
+                    type="text"
+                    className="input-base w-full"
+                    placeholder={q.placeholder}
+                    required={(q as any).required}
+                    onChange={(e) => updateValue(q.id, e.target.value)}
+                  />
+                )}
+                {q.type === "textarea" && (
+                  <textarea
+                    rows={4}
+                    className="input-base w-full"
+                    placeholder={q.placeholder}
+                    required={(q as any).required}
+                    onChange={(e) => updateValue(q.id, e.target.value)}
+                  />
+                )}
+                {q.type === "select" && q.id !== "language" && (
+                  <select
+                    className="input-base w-full bg-black/70"
+                    required={(q as any).required}
+                    onChange={(e) => updateValue(q.id, e.target.value)}
+                  >
+                    <option value="" disabled selected>
+                      {t("selectAnOption")}
+                    </option>
+                    {q.options.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {q.type === "select" && q.id === "language" && (
+                  <LanguageSelect
+                    value={(values[q.id] as string) || ""}
+                    onChange={(v) => updateValue(q.id, v)}
+                    placeholder={t("selectAnOption")}
+                  />
+                )}
+                {q.type === "radio" && (
+                  <div className="flex flex-wrap gap-3">
+                    {q.options.map((opt) => (
+                      <label key={opt} className="flex items-center gap-2 gold-border px-3 py-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={q.id}
+                          value={opt}
+                          onChange={(e) => updateValue(q.id, e.target.value)}
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {q.type === "file" && (
+                  <input
+                    type="file"
+                    className="input-base w-full"
+                    multiple={(q as any).multiple}
+                    onChange={(e) => {
+                      const files = e.target.files ? Array.from(e.target.files) : [];
+                      updateValue(q.id, files);
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && <p className="text-red-400">{error}</p>}
+
+        <button type="submit" disabled={!productId || submitting} className="gold-button">
+          {submitting ? t("submitting") : t("submit")}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+
