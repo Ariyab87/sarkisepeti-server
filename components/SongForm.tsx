@@ -14,6 +14,7 @@ export default function SongForm() {
   const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>("");
   const { t, lang } = useLang() as any;
 
   const questions = useMemo(() => getTranslatedQuestions(productId, t, lang), [productId, t, lang]);
@@ -22,34 +23,56 @@ export default function SongForm() {
     setValues((prev) => ({ ...prev, [id]: value }));
   }
 
-  async function onSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setStatus("");
+
     try {
-      const formData = new FormData();
-      formData.append("productId", productId);
+      const name = (values.name as string) || "";
+      const email = (values.email as string) || "";
+      
+      // Build message from all form fields
       const currentOptions = getProductOptions(lang);
       const productLabel = currentOptions.find((o) => o.value === productId)?.label || productId;
-      formData.append("productLabel", productLabel);
+      const messageParts: string[] = [`Product: ${productLabel}`];
+      
       for (const q of questions) {
         const v = values[q.id];
         if (q.type === "file" && v) {
           const files = Array.isArray(v) ? v : v instanceof File ? [v] : [];
-          files.forEach((file) => formData.append(q.id, file));
-        } else if (typeof v === "string") {
-          formData.append(q.id, v);
+          if (files.length > 0) {
+            messageParts.push(`${q.label}: ${files.length} file(s) uploaded`);
+          }
+        } else if (typeof v === "string" && v.trim() && q.id !== "name" && q.id !== "email") {
+          messageParts.push(`${q.label}: ${v}`);
         }
       }
+      
+      const message = messageParts.join("\n\n");
 
       const res = await fetch("/api/sendEmail", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, message }),
       });
-      if (!res.ok) throw new Error("Failed to submit");
-      router.push("/thank-you");
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to submit");
+      }
+
+      setStatus("Success! Email sent successfully.");
+      setTimeout(() => {
+        router.push("/thank-you");
+      }, 1500);
     } catch (err: any) {
       setError(err.message || "Submission failed");
+      setStatus(`Error: ${err.message || "Submission failed"}`);
     } finally {
       setSubmitting(false);
     }
@@ -61,7 +84,7 @@ export default function SongForm() {
         <h2 className="text-2xl md:text-3xl font-bold">{t("formTitle")}</h2>
         <p className="text-white/70 mt-2">{t("formSubtitle")}</p>
       </div>
-      <form onSubmit={onSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block mb-2 text-white/90">{t("productLabel")}</label>
           <select
@@ -161,6 +184,7 @@ export default function SongForm() {
           </div>
         )}
 
+        {status && <p className={`${status.includes("Error") ? "text-red-400" : "text-green-400"}`}>{status}</p>}
         {error && <p className="text-red-400">{error}</p>}
 
         <button type="submit" disabled={!productId || submitting} className="gold-button">
