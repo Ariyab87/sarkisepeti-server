@@ -2,14 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { getTranslatedQuestions, getProductOptions } from "@/lib/products";
-import { useRouter } from "next/navigation";
 import { useLang } from "./LanguageProvider";
 import LanguageSelect from "./LanguageSelect";
 
 type FieldValue = string | File | File[] | undefined;
 
 export default function SongForm() {
-  const router = useRouter();
   const [productId, setProductId] = useState<string>("");
   const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [submitting, setSubmitting] = useState(false);
