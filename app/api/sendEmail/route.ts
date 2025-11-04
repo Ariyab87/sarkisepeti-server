@@ -3,7 +3,12 @@ import nodemailer from "nodemailer";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log("📩 Email API triggered with:", body);
+    console.log("📩 API called with:", body);
+
+    if (!body.email || !body.message) {
+      console.error("🚨 Missing email or message");
+      return Response.json({ success: false, error: "Missing fields" });
+    }
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -23,12 +28,12 @@ export async function POST(req: Request) {
     console.log("✅ Email sent successfully to", process.env.EMAIL_RECEIVER);
     return Response.json({ success: true });
   } catch (error) {
-    console.error("❌ Email sending error:", error);
+    console.error("❌ Error in sendEmail route:", error);
     return Response.json({ success: false, error: (error as Error).message });
   }
 }
 
 export async function GET() {
-  console.log("⚠️ Received GET request on /api/sendEmail (not allowed)");
+  console.log("⚠️ GET request to /api/sendEmail - not allowed");
   return new Response("Method Not Allowed", { status: 405 });
 }

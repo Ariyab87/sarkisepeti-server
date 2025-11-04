@@ -27,6 +27,8 @@ export default function SongForm() {
     setSubmitting(true);
     setError(null);
 
+    console.log("🟡 Form submitted, preparing data...");
+
     try {
       const name = (values.name as string)?.trim() || "";
       const email = (values.email as string)?.trim() || "";
@@ -64,7 +66,7 @@ export default function SongForm() {
       const message = messageParts.join("\n\n");
 
       const data = { name, email, message };
-      console.log("📤 Submitting form data:", data);
+      console.log("🟢 Form data:", data);
 
       const res = await fetch("/api/sendEmail", {
         method: "POST",
@@ -74,19 +76,21 @@ export default function SongForm() {
         body: JSON.stringify(data),
       });
 
+      console.log("🟣 Response status:", res.status);
       const result = await res.json();
-      console.log("📩 API Response:", result);
+      console.log("🟢 API response JSON:", result);
 
       if (result.success) {
-        setStatus("✅ Sent successfully!");
+        console.log("✅ Email sent successfully.");
+        setStatus("✅ Sent!");
         window.location.href = "/thank-you";
       } else {
+        console.error("❌ Email sending failed:", result.error);
         setStatus("❌ Failed: " + (result.error || "Unknown error"));
-        console.error("❌ Email API error:", result);
       }
-    } catch (error) {
-      console.error("🚨 Network error while sending form:", error);
-      setStatus("❌ Network error");
+    } catch (err) {
+      console.error("🚨 Fetch/network error:", err);
+      setStatus("❌ Network error.");
     } finally {
       setSubmitting(false);
     }
