@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Şarkı Sepeti - Contact Form</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      color: #D4AF37;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #fff;
+      font-weight: 500;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #D4AF37;
+    }
+    input::placeholder, textarea::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      border: 2px solid #D4AF37;
+      border-radius: 6px;
+      color: #D4AF37;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background: #D4AF37;
+      color: #000;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 14px;
+      display: none;
+    }
+    .status.success {
+      background: rgba(76, 175, 80, 0.2);
+      border: 1px solid rgba(76, 175, 80, 0.5);
+      color: #4CAF50;
+      display: block;
+    }
+    .status.error {
+      background: rgba(244, 67, 54, 0.2);
+      border: 1px solid rgba(244, 67, 54, 0.5);
+      color: #f44336;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Şarkı Sepeti</h1>
+    <p class="subtitle">Get in touch with us</p>
+    
+    <form id="contactForm">
+      <div class="form-group">
+        <label for="name">Your Name *</label>
+        <input type="text" id="name" name="name" placeholder="Enter your name" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Your Email *</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="message">Message *</label>
+        <textarea id="message" name="message" placeholder="Enter your message" required></textarea>
+      </div>
+      
+      <button type="submit" id="submitBtn">Send Message</button>
+      
+      <div id="status" class="status"></div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("contactForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusDiv = document.getElementById("status");
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+
+      const formData = {
+        name: document.querySelector("#name").value.trim(),
+        email: document.querySelector("#email").value.trim(),
+        message: document.querySelector("#message").value.trim(),
+      };
+
+      console.log("Submitting form:", formData);
+
+      // Validate required fields
+      if (!formData.name || !formData.email || !formData.message) {
+        statusDiv.textContent = "Please fill in all fields";
+        statusDiv.className = "status error";
+        return;
+      }
+
+      // Disable submit button
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending...";
+      statusDiv.className = "status";
+      statusDiv.textContent = "";
+
+      try {
+        const res = await fetch("https://sarkisepeti-server.onrender.com/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+
+        if (res.ok) {
+          console.log("✅ Email sent!");
+          statusDiv.textContent = "✅ Message sent successfully!";
+          statusDiv.className = "status success";
+          
+          // Reset form
+          form.reset();
+          
+          // Redirect after 1.5 seconds
+          setTimeout(() => {
+            window.location.href = "/thank-you";
+          }, 1500);
+        } else {
+          const errorText = await res.text();
+          console.error("❌ Email failed:", errorText);
+          statusDiv.textContent = "Failed to send. Please try again.";
+          statusDiv.className = "status error";
+          alert("Failed to send. Please try again.");
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        statusDiv.textContent = "Something went wrong. Please try again.";
+        statusDiv.className = "status error";
+        alert("Something went wrong. Check console for details.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send Message";
+      }
+    };
+
+    form.addEventListener("submit", handleSubmit);
+  </script>
+</body>
+</html>
+
