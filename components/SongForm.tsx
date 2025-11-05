@@ -90,7 +90,8 @@ export default function SongForm() {
         alert(`Failed to send email (Status: ${res.status}). Please check console for details.`);
       }
     } catch (error) {
-      console.error("🚨 Fetch error:", error);
+      console.error("🚨 Exception caught in handleSubmit:", error);
+      console.error("🚨 Error stack:", error instanceof Error ? error.stack : "No stack trace");
       alert(`An error occurred: ${error instanceof Error ? error.message : "Unknown error"}. Check console for details.`);
     } finally {
       setSubmitting(false);
