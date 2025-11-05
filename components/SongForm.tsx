@@ -206,9 +206,17 @@ export default function SongForm() {
           </div>
         )}
 
-        <button type="submit" disabled={!productId || submitting} className="gold-button">
+        <button 
+          type="submit" 
+          disabled={!productId || submitting} 
+          className="gold-button"
+          onClick={() => console.log("🔵 Submit button clicked", { productId, submitting })}
+        >
           {submitting ? t("submitting") : t("submit")}
         </button>
+        {submitting && (
+          <p className="text-yellow-400 text-sm mt-2">⏳ Sending your request...</p>
+        )}
       </form>
     </div>
   );
