@@ -11,8 +11,6 @@ export default function SongForm() {
   const [productId, setProductId] = useState<string>("");
   const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>("");
   const { t, lang } = useLang() as any;
 
   const questions = useMemo(() => getTranslatedQuestions(productId, t, lang), [productId, t, lang]);
@@ -22,12 +20,8 @@ export default function SongForm() {
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault(); // prevent normal reload
-    setStatus("📨 Sending...");
+    e.preventDefault();
     setSubmitting(true);
-    setError(null);
-
-    console.log("🟡 Submitting form...");
 
     try {
       const name = (values.name as string)?.trim() || "";
@@ -35,13 +29,13 @@ export default function SongForm() {
       
       // Validate required fields
       if (!name || !email) {
-        setStatus("❌ Please fill in your name and email");
+        alert("Please fill in your name and email");
         setSubmitting(false);
         return;
       }
 
       if (!email.includes("@")) {
-        setStatus("❌ Please enter a valid email address");
+        alert("Please enter a valid email address");
         setSubmitting(false);
         return;
       }
@@ -65,32 +59,27 @@ export default function SongForm() {
       
       const message = messageParts.join("\n\n");
 
-      const data = { name, email, message };
-      console.log("🟢 Sending data:", data);
+      const formData = {
+        name,
+        email,
+        message,
+      };
 
-      const res = await fetch("/api/sendEmail", {
+      const res = await fetch("/api/send", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
-      console.log("🟣 Response:", res.status);
-      const result = await res.json();
-      console.log("🟢 Result:", result);
-
-      if (result.success) {
-        console.log("✅ Email sent successfully!");
-        setStatus("✅ Sent!");
-        setTimeout(() => (window.location.href = "/thank-you"), 1500);
+      if (res.ok) {
+        window.location.href = "/thank-you";
       } else {
-        console.error("❌ Email sending failed:", result.error);
-        setStatus("❌ Failed: " + (result.error || "Unknown error"));
+        console.error("Email failed:", await res.text());
+        alert("Failed to send email. Please try again.");
       }
     } catch (error) {
-      console.error("🚨 Network error:", error);
-      setStatus("❌ Network error.");
+      console.error("Fetch error:", error);
+      alert("An error occurred. Check console for details.");
     } finally {
       setSubmitting(false);
     }
@@ -204,9 +193,6 @@ export default function SongForm() {
             ))}
           </div>
         )}
-
-        {status && <p className={`${status.includes("❌") ? "text-red-400" : status.includes("✅") ? "text-green-400" : "text-yellow-400"}`}>{status}</p>}
-        {error && <p className="text-red-400">{error}</p>}
 
         <button type="submit" disabled={!productId || submitting} className="gold-button">
           {submitting ? t("submitting") : t("submit")}
