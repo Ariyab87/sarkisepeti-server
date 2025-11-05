@@ -21,20 +21,25 @@ export default function SongForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    console.log("🟡 Form submit triggered");
     setSubmitting(true);
 
     try {
       const name = (values.name as string)?.trim() || "";
       const email = (values.email as string)?.trim() || "";
       
+      console.log("🟢 Form values:", { name, email, productId, values });
+      
       // Validate required fields
       if (!name || !email) {
+        console.warn("⚠️ Missing name or email");
         alert("Please fill in your name and email");
         setSubmitting(false);
         return;
       }
 
       if (!email.includes("@")) {
+        console.warn("⚠️ Invalid email format");
         alert("Please enter a valid email address");
         setSubmitting(false);
         return;
@@ -65,21 +70,28 @@ export default function SongForm() {
         message,
       };
 
+      console.log("🟢 Sending POST to /api/send with data:", formData);
+
       const res = await fetch("/api/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
+      console.log("🟣 Response status:", res.status, res.statusText);
+
       if (res.ok) {
+        const result = await res.json();
+        console.log("✅ Success response:", result);
         window.location.href = "/thank-you";
       } else {
-        console.error("Email failed:", await res.text());
-        alert("Failed to send email. Please try again.");
+        const errorText = await res.text();
+        console.error("❌ Email failed - Status:", res.status, "Response:", errorText);
+        alert(`Failed to send email (Status: ${res.status}). Please check console for details.`);
       }
     } catch (error) {
-      console.error("Fetch error:", error);
-      alert("An error occurred. Check console for details.");
+      console.error("🚨 Fetch error:", error);
+      alert(`An error occurred: ${error instanceof Error ? error.message : "Unknown error"}. Check console for details.`);
     } finally {
       setSubmitting(false);
     }
