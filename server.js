@@ -28,16 +28,18 @@ app.post("/send", async (req, res) => {
   console.log("📨 Received form data:", req.body);
 
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: false,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
 
   try {
     await transporter.sendMail({
-      from: `"Şarkı Sepeti" <${process.env.EMAIL_USER}>`,
+      from: `"Şarkı Sepeti" <${process.env.SMTP_USER}>`,
       to: process.env.EMAIL_RECEIVER,
       subject: `New message from ${name}`,
       text: `From: ${email}\n\nMessage:\n${message}`,
