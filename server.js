@@ -2,13 +2,26 @@ import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static HTML files
+app.use(express.static(__dirname));
+
+// Route for thank-you page
+app.get("/thank-you", (req, res) => {
+  res.sendFile(join(__dirname, "thank-you.html"));
+});
 
 app.post("/send", async (req, res) => {
   const { name, email, message } = req.body;
@@ -43,4 +56,3 @@ app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Visit http://localhost:${port} to view the form`);
 });
-
